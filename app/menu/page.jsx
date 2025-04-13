@@ -1,23 +1,14 @@
-'use client';
+"use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-const menuItems = [
-  { name: "Nasi Rames", price: 10000, img: "/images/nasirames.png", category: "Makanan" },
-  { name: "Nasi Uduk", price: 12000, img: "/images/nasiuduk.png", category: "Makanan" },
-  { name: "Nasi Kuning", price: 10000, img: "/images/nasikuning.png", category: "Makanan" },
-  { name: "Nasi Ayam", price: 15000, img: "/images/nasiayam.png", category: "Makanan" },
-  { name: "Nasi Goreng", price: 10000, img: "/images/nasigoreng.png", category: "Makanan" },
-  { name: "Es/Panas", price: 3000, img: "/images/es-panas.png", category: "Minuman" },
-  { name: "Jus Jeruk Es/Panas", price: 5000, img: "/images/jus-jeruk.png", category: "Minuman" },
-  { name: "Kopi Es/Panas", price: 7000, img: "/images/kopi.png", category: "Minuman" },
-  { name: "Air Putih", price: 5000, img: "/images/air-putih.png", category: "Minuman" },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const Page = () => {
   const [cart, setCart] = useState({});
   const [category, setCategory] = useState("Semua");
+  const [menuItems, setMenuItems] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,6 +16,12 @@ const Page = () => {
     if (storedCart) {
       setCart(JSON.parse(storedCart));
     }
+
+    // Fetch data dari backend
+    fetch(`${API_URL}/products`)
+      .then((response) => response.json())
+      .then((data) => setMenuItems(data))
+      .catch((error) => console.error("Error fetching menu items:", error));
   }, []);
 
   const updateCart = (newCart) => {
@@ -68,10 +65,10 @@ const Page = () => {
         </div>
 
         <div className="flex gap-6 mb-4 text-lg">
-          {['Semua', 'Makanan', 'Minuman'].map((cat) => (
+          {["Semua", "Makanan", "Minuman"].map((cat) => (
             <button 
               key={cat} 
-              className={`uppercase ${category === cat ? 'font-bold' : 'opacity-50'}`} 
+              className={`uppercase ${category === cat ? "font-bold" : "opacity-50"}`} 
               onClick={() => setCategory(cat)}
             >
               {cat}
@@ -79,24 +76,48 @@ const Page = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          {menuItems.filter(item => category === "Semua" || item.category === category).map((item, index) => (
-            <div key={index} className="bg-[#8A2B3E] p-2 rounded-lg">
-              <Image src={item.img} alt={item.name} width={200} height={200} className="w-full h-40 object-cover rounded-md" />
-              <div className="p-3">
-                <h3 className="text-lg font-semibold">{item.name}</h3>
-                <p className="text-sm">Rp. {item.price.toLocaleString()}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <div className="flex gap-2">
-                    <button className="bg-white text-black px-2 py-1 rounded" onClick={() => decreaseQty(item.name)}>-</button>
-                    <span>{cart[item.name]?.qty || 0}</span>
-                    <button className="bg-white text-black px-2 py-1 rounded" onClick={() => increaseQty(item.name, item.price)}>+</button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {menuItems
+            .filter(item => category === "Semua" || item.category.toLowerCase() === category.toLowerCase())
+            .map((item, index) => (
+              <div key={index} className="bg-[#8A2B3E] p-4 rounded-2xl shadow-md">
+                <Image 
+                  src={item.img.startsWith("http") ? item.img : `${item.img}`} 
+                  alt={item.name} 
+                  width={500} 
+                  height={500} 
+                  style={{ objectFit: "cover", borderRadius: "12px" }} 
+                  className="w-full h-60 object-cover rounded-xl"
+                />
+                
+                <div className="p-3 text-white">
+                  <h3 className="text-xl font-semibold">{item.name}</h3>
+                  <p className="text-sm mt-1">Rp. {item.price.toLocaleString()}</p>
+
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex gap-3 items-center">
+                      <button 
+                        className="bg-white text-black px-3 py-1 rounded-md font-bold" 
+                        onClick={() => decreaseQty(item.name)}
+                      >
+                        -
+                      </button>
+
+                      <span className="text-lg">{cart[item.name]?.qty || 0}</span>
+
+                      <button 
+                        className="bg-white text-black px-3 py-1 rounded-md font-bold" 
+                        onClick={() => increaseQty(item.name, item.price)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
+
 
         <div className="mt-6 bg-[#8A2B3E] p-4 w-full rounded-lg flex justify-between items-center">
           <div className="flex items-center gap-4">
