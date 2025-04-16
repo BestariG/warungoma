@@ -88,7 +88,7 @@ const TransactionDetailPage = () => {
   };
 
   const handleEditOrder = () => {
-    router.push("/transaction");
+    router.push("/transaksi");
   };
 
   if (!orderDetails) {

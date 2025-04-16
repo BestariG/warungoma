@@ -8,6 +8,7 @@ const AdminTransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [stockError, setStockError] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -81,7 +82,16 @@ const AdminTransactionsPage = () => {
     try {
       setStatusUpdating(true);
       setError('');
+      setStockError('');
       const token = localStorage.getItem("token");
+      
+      // If moving to processing, show a confirmation dialog
+      if (status === 'processing' && selectedTransaction?.status === 'pending') {
+        if (!window.confirm('Updating to processing status will reduce product stock. Continue?')) {
+          setStatusUpdating(false);
+          return;
+        }
+      }
       
       const response = await fetch(`${API_URL}/transactions/${id}/status`, {
         method: 'PATCH',
@@ -92,8 +102,16 @@ const AdminTransactionsPage = () => {
         body: JSON.stringify({ status })
       });
       
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to update transaction status');
+        // Check if it's a stock-related error
+        if (result.error && result.error.includes('stock')) {
+          setStockError(result.error);
+        } else {
+          setError(result.error || 'Failed to update transaction status');
+        }
+        return;
       }
       
       // Update local transaction list
@@ -106,6 +124,13 @@ const AdminTransactionsPage = () => {
       // Update selected transaction if open
       if (selectedTransaction && selectedTransaction.id === id) {
         setSelectedTransaction({ ...selectedTransaction, status });
+      }
+      
+      // Show success message if processing (stock reduced)
+      if (status === 'processing') {
+        alert('Status updated to processing. Product stock has been reduced.');
+      } else if (status === 'cancelled' && selectedTransaction?.status === 'processing') {
+        alert('Order cancelled. Product stock has been restored.');
       }
       
     } catch (err) {
@@ -162,6 +187,12 @@ const AdminTransactionsPage = () => {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
+        </div>
+      )}
+      
+      {stockError && (
+        <div className="bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded mb-4">
+          <span className="font-bold">Stock Error:</span> {stockError}
         </div>
       )}
       
@@ -322,6 +353,23 @@ const AdminTransactionsPage = () => {
                   {/* Status Update Actions */}
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-medium text-gray-500 mb-2">Update Order Status</h3>
+                    
+                    {selectedTransaction.status === 'pending' && (
+                      <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded mb-3">
+                        <p className="text-sm">
+                          <span className="font-bold">Note:</span> Updating to "Processing" will reduce product stock.
+                        </p>
+                      </div>
+                    )}
+                    
+                    {selectedTransaction.status === 'processing' && (
+                      <div className="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-2 rounded mb-3">
+                        <p className="text-sm">
+                          <span className="font-bold">Note:</span> Cancelling will restore product stock. Completing will maintain reduced stock.
+                        </p>
+                      </div>
+                    )}
+                    
                     <div className="flex flex-wrap gap-2">
                       {selectedTransaction.status !== 'pending' && (
                         <button

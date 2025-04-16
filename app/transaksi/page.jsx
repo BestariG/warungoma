@@ -1,7 +1,26 @@
 'use client';
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+
+const getTodayDateString = () => {
+  const today = new Date();
+  return today.toISOString().split("T")[0]; // Format YYYY-MM-DD
+};
+
+const generateTableNumber = () => {
+  const todayKey = getTodayDateString();
+  const storedData = JSON.parse(localStorage.getItem("tableNumberTracker")) || {};
+
+  if (storedData.date !== todayKey) {
+    storedData.date = todayKey;
+    storedData.counter = 1;
+  } else {
+    storedData.counter += 1;
+  }
+
+  localStorage.setItem("tableNumberTracker", JSON.stringify(storedData));
+  return `M${storedData.counter.toString().padStart(2, "0")}`;
+};
 
 const TransactionPage = () => {
   const [cart, setCart] = useState({});
@@ -16,6 +35,12 @@ const TransactionPage = () => {
     if (storedCart) {
       setCart(JSON.parse(storedCart));
     }
+
+    // Generate table number once
+    setCustomer((prev) => ({
+      ...prev,
+      table: generateTableNumber(),
+    }));
   }, []);
 
   useEffect(() => {
@@ -24,7 +49,7 @@ const TransactionPage = () => {
       .then((data) => setMenuItems(data))
       .catch((err) => console.error("Error fetching products:", err));
   }, []);
-  
+
   const updateCart = (newCart) => {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
@@ -49,31 +74,33 @@ const TransactionPage = () => {
 
   const validateOrder = () => {
     const newErrors = {};
-    
+
     if (!customer.name.trim()) {
       newErrors.name = "Nama tidak boleh kosong";
     }
-    
+
+    if (!/^08[0-9]{8,11}$/.test(customer.phone)) {
+      newErrors.phone = "Nomor HP tidak valid (harus mulai dari 08 dan 10–13 digit)";
+    }
+
     if (!customer.table.trim()) {
       newErrors.table = "Nomor meja harus diisi";
     }
-    
+
     if (Object.keys(cart).length === 0) {
       newErrors.cart = "Keranjang belanja kosong";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleReviewOrder = () => {
     if (!validateOrder()) return;
-    
-    // Store the data in localStorage for the details page
+
     localStorage.setItem("customerDetails", JSON.stringify(customer));
     if (note) localStorage.setItem("orderNote", JSON.stringify(note));
-    
-    // Navigate to the details confirmation page
+
     router.push("/detail");
   };
 
@@ -88,26 +115,12 @@ const TransactionPage = () => {
           </div>
         )}
 
-        {/* List Pesanan */}
         {Object.entries(cart).length > 0 ? (
           Object.entries(cart).map(([name, item], index) => (
             <div key={index} className="flex items-center justify-between border-b pb-3 mb-3">
-              <div className="flex items-center gap-3">
-                <Image
-                  src={
-                    (menuItems.find((item) => item.name === name)?.img?.startsWith("http")
-                      ? menuItems.find((item) => item.name === name)?.img
-                      : `/images/${menuItems.find((item) => item.name === name)?.img}`) || "/images/default.png"
-                  }
-                  alt={name}
-                  width={50}
-                  height={50}
-                  className="rounded-full object-cover"
-                />
-                <div>
-                  <p className="font-medium">{name}</p>
-                  <p className="text-sm">Rp. {item.price.toLocaleString()}</p>
-                </div>
+              <div>
+                <p className="font-medium">{name}</p>
+                <p className="text-sm">Rp. {item.price.toLocaleString()}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button className="bg-red-500 text-white px-2 rounded" onClick={() => decreaseQty(name)}>-</button>
@@ -134,7 +147,7 @@ const TransactionPage = () => {
           />
         </div>
 
-        {/* Form Nama, No HP, No Meja */}
+        {/* Nama */}
         <div className="mt-4">
           <p className="font-medium">Nama</p>
           <input
@@ -147,30 +160,33 @@ const TransactionPage = () => {
           {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
         </div>
 
+        {/* Nomor HP */}
         <div className="mt-4">
           <p className="font-medium">No HP</p>
           <input
-            type="text"
-            placeholder="Masukkan nomor HP Anda"
-            className="w-full mt-1 p-2 border rounded-md bg-white text-gray-700"
+            type="tel"
+            placeholder="Contoh: 081234567890"
+            className={`w-full mt-1 p-2 border rounded-md bg-white text-gray-700 ${errors.phone ? 'border-red-500' : ''}`}
             value={customer.phone}
             onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+            pattern="^08[0-9]{8,11}$"
+            maxLength={15}
           />
+          {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
         </div>
 
+        {/* Nomor Meja */}
         <div className="mt-4">
           <p className="font-medium">No Meja</p>
           <input
             type="text"
-            placeholder="Masukkan nomor meja"
-            className={`w-full mt-1 p-2 border rounded-md bg-white text-gray-700 ${errors.table ? 'border-red-500' : ''}`}
+            className="w-full mt-1 p-2 border rounded-md bg-gray-100 text-gray-500"
             value={customer.table}
-            onChange={(e) => setCustomer({ ...customer, table: e.target.value })}
+            readOnly
           />
-          {errors.table && <p className="text-red-500 text-sm mt-1">{errors.table}</p>}
         </div>
 
-        {/* Total Harga */}
+        {/* Total */}
         <div className="mt-4 border-t pt-3">
           <div className="flex justify-between font-semibold">
             <span>Total</span>
@@ -178,8 +194,7 @@ const TransactionPage = () => {
           </div>
         </div>
 
-        {/* Tombol Pesan */}
-        <button 
+        <button
           className="w-full bg-[#5E031C] text-white py-2 mt-4 rounded-lg"
           onClick={handleReviewOrder}
         >
