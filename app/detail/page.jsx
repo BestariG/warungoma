@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const TransactionDetailPage = () => {
@@ -33,7 +32,7 @@ const TransactionDetailPage = () => {
       });
     } else {
       // If no data, redirect back to transaction page
-      router.push("/transaction");
+      router.push("/transaksi");
     }
   }, [router]);
 
@@ -143,8 +142,9 @@ const TransactionDetailPage = () => {
                 <span>{name}</span>
               </div>
               <div className="text-right">
-                <p>Rp {item.price.toLocaleString()}</p>
                 <p className="font-medium">Rp {(item.qty * item.price).toLocaleString()}</p>
+                {/* Optionally display the productId */}
+                {/* <p className="text-sm text-gray-500">Product ID: {item.id}</p> */}
               </div>
             </div>
           ))}

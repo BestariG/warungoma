@@ -3,10 +3,10 @@ import Link from "next/link";
 
 const Hero1 = () => {
   return (
-    <section className="relative text-white h-[80vh] flex items-center px-12">
+    <section className="relative text-white min-h-[80vh] flex flex-col md:flex-row items-center px-4 md:px-12 py-10 md:py-0">
       {/* Container teks */}
-      <div className="w-1/2 relative z-10">
-        <h1 className="text-[120px] font-serif font-bold leading-none">
+      <div className="w-full md:w-1/2 relative z-10 mb-8 md:mb-0">
+        <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[120px] font-serif font-bold leading-none">
           Rumah <br /> Makan Oma
         </h1>
         <p className="text-lg italic text-gray-300">
@@ -21,9 +21,9 @@ const Hero1 = () => {
       </div>
 
       {/* Gambar makanan dengan overlay teks */}
-      <div className="w-1/2 relative">
+      <div className="w-full md:w-1/2 relative h-64 sm:h-80 md:h-full">
         <Image
-          src="/images/nasiuduk.png" // Ganti dengan path gambarmu
+          src="/images/nasiuduk.png"
           alt="Makanan Enak"
           width={600}
           height={400}
@@ -31,7 +31,7 @@ const Hero1 = () => {
         />
 
         {/* Overlay latar belakang teks */}
-        <div className="absolute top-28 left-0 w-[50%] h-[50%] bg-[#660F24] opacity-50"></div>
+        <div className="absolute top-1/4 left-0 w-1/2 h-1/2 bg-[#660F24] opacity-50"></div>
       </div>
 
       {/* Hiasan di pojok kanan atas */}
