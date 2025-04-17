@@ -164,7 +164,7 @@ const TransactionPage = () => {
         <div className="mt-4">
           <p className="font-medium">No HP</p>
           <input
-            type="tel"
+            type="number"
             placeholder="Contoh: 081234567890"
             className={`w-full mt-1 p-2 border rounded-md bg-white text-gray-700 ${errors.phone ? 'border-red-500' : ''}`}
             value={customer.phone}
